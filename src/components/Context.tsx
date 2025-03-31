@@ -22,6 +22,10 @@ const Context = () => {
     navigate(`/add?edit=${prompt.id}`);
   };
 
+  const handleUsePrompt = (prompt: Prompt) => {
+    navigate(`/?prompt=${prompt.id}`);
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mx-auto max-w-3xl">
@@ -35,14 +39,14 @@ const Context = () => {
               key={prompt.id}
               className="group relative rounded-lg border p-4 text-left shadow-sm"
             >
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute top-2 right-2 opacity-0 transition-opacity group-hover:opacity-100"
-                onClick={() => handleEdit(prompt)}
-              >
-                <Pencil className="h-4 w-4" />
-              </Button>
+              <div className="absolute top-2 right-2 flex gap-2 opacity-0 transition-opacity group-hover:opacity-100">
+                <Button variant="ghost" size="icon" onClick={() => handleEdit(prompt)}>
+                  <Pencil className="h-4 w-4" />
+                </Button>
+                <Button variant="default" size="sm" onClick={() => handleUsePrompt(prompt)}>
+                  Use Prompt
+                </Button>
+              </div>
               <h2 className="mb-2 text-xl font-semibold">{prompt.title}</h2>
               <p className="line-clamp-2 text-slate-600">{prompt.content}</p>
             </div>
