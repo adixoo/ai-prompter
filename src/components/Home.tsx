@@ -3,7 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { AutosizeTextarea } from '@/components/ui/textarea';
 import { useQueryState } from 'nuqs';
-import { X } from 'lucide-react';
+import { X, Copy, Check } from 'lucide-react';
+import { useCopyToClipboard } from '@/hooks/useCopyToClipboard';
+import { useDebounce } from '@/hooks/useDebounce';
 
 interface Prompt {
   id: number;
@@ -16,16 +18,28 @@ const Home = () => {
   const [promptId, setPromptId] = useQueryState('prompt');
   const [prompts, setPrompts] = useState<Prompt[]>([]);
   const navigate = useNavigate();
+  const { isCopied, copyToClipboard } = useCopyToClipboard();
+  const debouncedPromptText = useDebounce(promptText, 1000);
 
   useEffect(() => {
     const savedPrompts = JSON.parse(localStorage.getItem('prompts') || '[]');
     setPrompts(savedPrompts);
   }, []);
 
+  useEffect(() => {
+    if (debouncedPromptText) {
+      copyToClipboard(debouncedPromptText);
+    }
+  }, [debouncedPromptText, copyToClipboard]);
+
   const selectedPrompt = prompts.find(p => p.id === Number(promptId));
 
   const handleClose = async () => {
     await setPromptId(null);
+  };
+
+  const handleCopy = () => {
+    copyToClipboard(promptText);
   };
 
   return (
@@ -51,12 +65,29 @@ const Home = () => {
             <Button onClick={() => navigate('/context')}>Add Context</Button>
           </div>
 
-          <AutosizeTextarea
-            value={promptText}
-            onChange={e => setPromptText(e.target.value)}
-            placeholder="Add prompt here..."
-            minHeight={200}
-          />
+          <div className="space-y-2">
+            <AutosizeTextarea
+              value={promptText}
+              onChange={e => setPromptText(e.target.value)}
+              placeholder="Add prompt here..."
+              minHeight={200}
+            />
+            <div className="flex justify-end">
+              <Button variant="outline" size="sm" onClick={handleCopy} className="gap-2">
+                {isCopied ? (
+                  <>
+                    <Check className="h-4 w-4" />
+                    Copied!
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-4 w-4" />
+                    Copy to clipboard
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
