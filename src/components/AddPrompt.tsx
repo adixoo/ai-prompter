@@ -5,7 +5,15 @@ import { AutosizeTextarea } from './ui/textarea';
 import { Button } from './ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from './ui/form';
 import { Input } from './ui/input';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { useQueryState } from 'nuqs';
+import { useEffect, useState } from 'react';
+
+interface Prompt {
+  id: number;
+  title: string;
+  content: string;
+}
 
 const formSchema = z.object({
   title: z.string().min(2, {
@@ -17,28 +25,44 @@ const formSchema = z.object({
 });
 
 const AddPrompt = () => {
-  const location = useLocation();
   const navigate = useNavigate();
-  const promptToEdit = location.state?.prompt;
+  const [editId] = useQueryState('edit');
+  const [prompts, setPrompts] = useState<Prompt[]>([]);
+
+  useEffect(() => {
+    const savedPrompts = JSON.parse(localStorage.getItem('prompts') || '[]');
+    setPrompts(savedPrompts);
+  }, []);
+
+  const promptToEdit = prompts.find(p => p.id === Number(editId));
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      title: promptToEdit?.title || '',
-      content: promptToEdit?.content || '',
+      title: '',
+      content: '',
     },
   });
+
+  useEffect(() => {
+    if (promptToEdit) {
+      form.reset({
+        title: promptToEdit.title,
+        content: promptToEdit.content,
+      });
+    }
+  }, [promptToEdit, form]);
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     const existingPrompts = JSON.parse(localStorage.getItem('prompts') || '[]');
 
     if (promptToEdit) {
-      const updatedPrompts = existingPrompts.map((p: any) =>
+      const updatedPrompts = existingPrompts.map((p: Prompt) =>
         p.id === promptToEdit.id ? { ...p, ...values } : p
       );
       localStorage.setItem('prompts', JSON.stringify(updatedPrompts));
     } else {
-      const newPrompt = {
+      const newPrompt: Prompt = {
         id: existingPrompts.length + 1,
         ...values,
       };
@@ -87,7 +111,7 @@ const AddPrompt = () => {
           />
           <div className="flex gap-2">
             <Button type="submit">{promptToEdit ? 'Update Prompt' : 'Save Prompt'}</Button>
-            <Button type="button" variant="outline" onClick={() => navigate('/')}>
+            <Button type="button" variant="outline" onClick={() => navigate('/context')}>
               Cancel
             </Button>
           </div>

@@ -19,7 +19,7 @@ const Context = () => {
   }, []);
 
   const handleEdit = (prompt: Prompt) => {
-    navigate('/add', { state: { prompt } });
+    navigate(`/add?edit=${prompt.id}`);
   };
 
   return (
