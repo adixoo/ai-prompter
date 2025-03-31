@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { AutosizeTextarea } from './ui/textarea';
 
 const AddPrompt = () => {
   const [title, setTitle] = useState('');
@@ -31,13 +32,9 @@ const AddPrompt = () => {
           <label htmlFor="content" className="mb-1 block text-sm font-medium text-gray-700">
             Prompt Content
           </label>
-          <textarea
-            id="content"
-            value={content}
-            onChange={e => setContent(e.target.value)}
-            rows={6}
-            className="w-full rounded-md border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-            required
+          <AutosizeTextarea
+            minHeight={200}
+            placeholder="This textarea with min height 52 and unlimited max height."
           />
         </div>
         <button

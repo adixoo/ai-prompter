@@ -9,3 +9,7 @@ alwaysApply: true
 Tailwindcss v4
 Vite 6
 react 19
+
+## CSS Colors 
+Only use tailwindcss indigo and slate color scale
+shadcn ui color scale are allowed to use.
