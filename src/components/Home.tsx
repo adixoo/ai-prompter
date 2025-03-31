@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { AutosizeTextarea } from '@/components/ui/textarea';
@@ -6,18 +6,17 @@ import { parseAsInteger, useQueryState } from 'nuqs';
 import { X, Copy, Check } from 'lucide-react';
 import { useCopyToClipboard } from '@/hooks/useCopyToClipboard';
 import { useDebounce } from '@/hooks/useDebounce';
-
 import { Prompt } from '@/types';
 import { Prompt1 } from '@/prompt/p1';
 
 const Home = () => {
   const [promptState, setPromptState] = useState<Prompt>({ title: '', prompt: '' });
   const [promptIndex, setPromptIndex] = useQueryState('prompt', parseAsInteger);
-
   const [userContext, setUserContext] = useState<string>('');
   const navigate = useNavigate();
   const { isCopied, copyToClipboard } = useCopyToClipboard();
-  const debouncedPromptText = useDebounce(promptState.prompt, 1000);
+  const debouncedPromptText = useDebounce(userContext, 1000);
+  const isFirstRender = useRef(true);
 
   useEffect(() => {
     if (promptIndex !== null) {
@@ -28,10 +27,16 @@ const Home = () => {
   }, [promptIndex]);
 
   useEffect(() => {
-    if (debouncedPromptText) {
-      copyToClipboard(debouncedPromptText);
+    if (!isFirstRender.current && debouncedPromptText) {
+      if (promptState.title) {
+        const prompt = Prompt1(promptState.prompt, debouncedPromptText);
+        copyToClipboard(prompt);
+      } else {
+        copyToClipboard(debouncedPromptText);
+      }
     }
-  }, [debouncedPromptText, copyToClipboard]);
+    isFirstRender.current = false;
+  }, [debouncedPromptText, copyToClipboard, promptState]);
 
   const handleClose = async () => {
     await setPromptIndex(null);
@@ -72,6 +77,7 @@ const Home = () => {
 
           <div className="space-y-2">
             <AutosizeTextarea
+              value={userContext}
               onChange={e => setUserContext(e.target.value)}
               placeholder="Add prompt here..."
               minHeight={200}
