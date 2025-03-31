@@ -6,77 +6,73 @@ import { Button } from './ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from './ui/form';
 import { Input } from './ui/input';
 import { useNavigate } from 'react-router-dom';
-import { useQueryState } from 'nuqs';
+import { parseAsInteger, useQueryState } from 'nuqs';
 import { useEffect, useState } from 'react';
 
-interface Prompt {
-  id: number;
-  title: string;
-  content: string;
-}
+import { Prompt } from '../types';
 
 const formSchema = z.object({
   title: z.string().min(2, {
     message: 'Title must be at least 2 characters.',
   }),
-  content: z.string().min(10, {
+  prompt: z.string().min(10, {
     message: 'Content must be at least 10 characters.',
   }),
 });
 
 const AddPrompt = () => {
   const navigate = useNavigate();
-  const [editId] = useQueryState('edit');
-  const [prompts, setPrompts] = useState<Prompt[]>([]);
+  const [editIndex] = useQueryState('edit', parseAsInteger);
+  const [editingPrompt, setEditingPrompt] = useState<Prompt | null>(null);
 
   useEffect(() => {
     const savedPrompts = JSON.parse(localStorage.getItem('prompts') || '[]');
-    setPrompts(savedPrompts);
-  }, []);
-
-  const promptToEdit = prompts.find(p => p.id === Number(editId));
+    if (editIndex !== null) {
+      const promptToEdit = savedPrompts[editIndex];
+      if (promptToEdit) {
+        setEditingPrompt(promptToEdit);
+      }
+    }
+  }, [editIndex]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: '',
-      content: '',
+      prompt: '',
     },
   });
 
   useEffect(() => {
-    if (promptToEdit) {
+    if (editingPrompt) {
       form.reset({
-        title: promptToEdit.title,
-        content: promptToEdit.content,
+        title: editingPrompt.title,
+        prompt: editingPrompt.prompt,
       });
     }
-  }, [promptToEdit, form]);
+  }, [editingPrompt, form]);
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     const existingPrompts = JSON.parse(localStorage.getItem('prompts') || '[]');
 
-    if (promptToEdit) {
-      const updatedPrompts = existingPrompts.map((p: Prompt) =>
-        p.id === promptToEdit.id ? { ...p, ...values } : p
-      );
+    if (editIndex !== null) {
+      const updatedPrompts = [...existingPrompts];
+      updatedPrompts[editIndex] = values;
       localStorage.setItem('prompts', JSON.stringify(updatedPrompts));
     } else {
-      const newPrompt: Prompt = {
-        id: existingPrompts.length + 1,
-        ...values,
-      };
-      const updatedPrompts = [newPrompt, ...existingPrompts];
+      const updatedPrompts = [values, ...existingPrompts];
       localStorage.setItem('prompts', JSON.stringify(updatedPrompts));
     }
 
     form.reset();
-    navigate('/');
+    navigate('/context');
   };
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="mb-6 text-3xl font-bold">{promptToEdit ? 'Edit Prompt' : 'Add New Prompt'}</h1>
+      <h1 className="mb-6 text-3xl font-bold">
+        {editingPrompt ? 'Edit Prompt' : 'Add New Prompt'}
+      </h1>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="max-w-2xl space-y-4">
           <FormField
@@ -94,7 +90,7 @@ const AddPrompt = () => {
           />
           <FormField
             control={form.control}
-            name="content"
+            name="prompt"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Prompt Content</FormLabel>
@@ -110,7 +106,7 @@ const AddPrompt = () => {
             )}
           />
           <div className="flex gap-2">
-            <Button type="submit">{promptToEdit ? 'Update Prompt' : 'Save Prompt'}</Button>
+            <Button type="submit">{editingPrompt ? 'Update Prompt' : 'Save Prompt'}</Button>
             <Button type="button" variant="outline" onClick={() => navigate('/context')}>
               Cancel
             </Button>

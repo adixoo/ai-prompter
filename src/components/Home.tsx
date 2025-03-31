@@ -2,29 +2,30 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { AutosizeTextarea } from '@/components/ui/textarea';
-import { useQueryState } from 'nuqs';
+import { parseAsInteger, useQueryState } from 'nuqs';
 import { X, Copy, Check } from 'lucide-react';
 import { useCopyToClipboard } from '@/hooks/useCopyToClipboard';
 import { useDebounce } from '@/hooks/useDebounce';
 
-interface Prompt {
-  id: number;
-  title: string;
-  content: string;
-}
+import { Prompt } from '@/types';
+import { Prompt1 } from '@/prompt/p1';
 
 const Home = () => {
-  const [promptText, setPromptText] = useState('');
-  const [promptId, setPromptId] = useQueryState('prompt');
-  const [prompts, setPrompts] = useState<Prompt[]>([]);
+  const [promptState, setPromptState] = useState<Prompt>({ title: '', prompt: '' });
+  const [promptIndex, setPromptIndex] = useQueryState('prompt', parseAsInteger);
+
+  const [userContext, setUserContext] = useState<string>('');
   const navigate = useNavigate();
   const { isCopied, copyToClipboard } = useCopyToClipboard();
-  const debouncedPromptText = useDebounce(promptText, 1000);
+  const debouncedPromptText = useDebounce(promptState.prompt, 1000);
 
   useEffect(() => {
-    const savedPrompts = JSON.parse(localStorage.getItem('prompts') || '[]');
-    setPrompts(savedPrompts);
-  }, []);
+    if (promptIndex !== null) {
+      const savedPrompts = JSON.parse(localStorage.getItem('prompts') || '[]');
+      const prompt = savedPrompts[promptIndex];
+      setPromptState(prompt);
+    }
+  }, [promptIndex]);
 
   useEffect(() => {
     if (debouncedPromptText) {
@@ -32,14 +33,18 @@ const Home = () => {
     }
   }, [debouncedPromptText, copyToClipboard]);
 
-  const selectedPrompt = prompts.find(p => p.id === Number(promptId));
-
   const handleClose = async () => {
-    await setPromptId(null);
+    await setPromptIndex(null);
+    setPromptState({ title: '', prompt: '' });
   };
 
   const handleCopy = () => {
-    copyToClipboard(promptText);
+    if (promptState.title) {
+      const prompt = Prompt1(promptState.prompt, userContext);
+      copyToClipboard(prompt);
+    } else {
+      copyToClipboard(userContext);
+    }
   };
 
   return (
@@ -49,9 +54,9 @@ const Home = () => {
 
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            {selectedPrompt && (
+            {promptState.title && (
               <div className="flex items-center gap-2 rounded-full bg-indigo-50 px-4 py-2 text-sm text-indigo-700">
-                <span className="font-medium">{selectedPrompt.title}</span>
+                <span className="font-medium">{promptState.title}</span>
                 <Button
                   variant="ghost"
                   size="icon"
@@ -67,8 +72,7 @@ const Home = () => {
 
           <div className="space-y-2">
             <AutosizeTextarea
-              value={promptText}
-              onChange={e => setPromptText(e.target.value)}
+              onChange={e => setUserContext(e.target.value)}
               placeholder="Add prompt here..."
               minHeight={200}
             />

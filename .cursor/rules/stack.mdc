@@ -13,3 +13,6 @@ react 19
 ## CSS Colors 
 Only use tailwindcss indigo and slate color scale
 shadcn ui color scale are allowed to use.
+
+## Prompt store datatype
+[{title:string,prompt:string}]
